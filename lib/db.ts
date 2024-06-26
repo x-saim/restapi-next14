@@ -7,6 +7,17 @@ if (!MONGODB_URI) {
   );
 }
 
+/*
+
+mongoose.connection.readyState ->
+ready states being:
+
+    0: disconnected
+    1: connected
+    2: connecting
+    3: disconnecting
+
+*/
 const connect = async () => {
   const connectionState = mongoose.connection.readyState;
 
