@@ -8,8 +8,11 @@ import { Types } from 'mongoose';
 export const GET = async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const categoryId = searchParams.get('categoryId');
+    const userId: string | null = searchParams.get('userId');
+    const categoryId: string | null = searchParams.get('categoryId');
+
+    // Search filter feature
+    const searchKeywords = searchParams.get('keywords') as string;
 
     if (!userId || !Types.ObjectId.isValid(userId)) {
       return new NextResponse(
@@ -49,12 +52,31 @@ export const GET = async (request: Request) => {
       );
     }
 
-    const blogFilter: any = {
+    const blogsFilter: any = {
       user: new Types.ObjectId(userId),
       category: new Types.ObjectId(categoryId),
     };
 
-    const userBlogs = await Blog.find(blogFilter);
+    /* Query Filter to search for blog posts based on keywords
+
+    - $or is a MongoDB Query Operator, used to perform a logical OR operation on an array of query expressions.
+
+    - $regex: This is a MongoDB operator that allows you to perform regular expression searches. In this case, it searches for documents where the title or description contains the searchKeywords.
+    
+    - $options: 'i': This option makes the regular expression case-insensitive. It ensures that the search does not differentiate between uppercase and lowercase letters. 
+    */
+    if (searchKeywords) {
+      blogsFilter.$or = [
+        {
+          title: { $regex: searchKeywords, $options: 'i' },
+        },
+        {
+          description: { $regex: searchKeywords, $options: 'i' },
+        },
+      ];
+    }
+
+    const userBlogs = await Blog.find(blogsFilter);
 
     return new NextResponse(JSON.stringify({ userBlogs }), { status: 200 });
   } catch (err: any) {
