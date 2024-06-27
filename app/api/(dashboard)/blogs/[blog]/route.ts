@@ -83,3 +83,68 @@ export const GET = async (request: Request, context: { params: any }) => {
     });
   }
 };
+
+// PATCH: Apply partial update to existing blog
+export const PATCH = async (request: Request, context: { params: any }) => {
+  const blogId = context.params.blog;
+
+  try {
+    const { title, description } = await request.json();
+    const { searchParams } = new URL(request.url); // Acquire params from URL
+    const userId = searchParams.get('userId'); // Acquire userId param from URL
+
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Invalid or missing userId.' }),
+        { status: 400 }
+      );
+    }
+
+    await connect();
+
+    const user = await User.findById(userId);
+    //const category = await Category.findById(categoryId);
+
+    if (!user) {
+      return new NextResponse(
+        JSON.stringify({
+          message: 'User not found in the database.',
+        }),
+        { status: 404 }
+      );
+    }
+
+    const blog = await Blog.findOne({
+      _id: blogId,
+      user: userId,
+    });
+
+    if (!blog) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Blog not found in the database.' }),
+        { status: 400 }
+      );
+    }
+
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      { title, description },
+      { new: true }
+    );
+
+    return new NextResponse(
+      JSON.stringify({
+        message: 'Blog was successfully updated.',
+        blog: updatedBlog,
+      }),
+      { status: 200 }
+    );
+  } catch (err: any) {
+    return new NextResponse(
+      `Error occured while updating blog: ${err.Message}`,
+      {
+        status: 500,
+      }
+    );
+  }
+};
