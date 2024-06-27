@@ -11,8 +11,12 @@ export const GET = async (request: Request) => {
     const userId: string | null = searchParams.get('userId');
     const categoryId: string | null = searchParams.get('categoryId');
 
-    // Search filter feature
+    // Feature: Search keyword filter
     const searchKeywords = searchParams.get('keywords') as string;
+
+    // Feature: Date range filter
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
     if (!userId || !Types.ObjectId.isValid(userId)) {
       return new NextResponse(
@@ -74,6 +78,25 @@ export const GET = async (request: Request) => {
           description: { $regex: searchKeywords, $options: 'i' },
         },
       ];
+    }
+
+    // Date Filter - MongoDB Range Query
+    // gte = greater than equal
+    // lte = less than equal
+    // Return blogs with date range condition
+    if (startDate && endDate) {
+      blogsFilter.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    } else if (startDate) {
+      blogsFilter.createdAt = {
+        $gte: new Date(startDate),
+      };
+    } else if (endDate) {
+      blogsFilter.createdAt = {
+        $lte: new Date(endDate),
+      };
     }
 
     const userBlogs = await Blog.find(blogsFilter);
