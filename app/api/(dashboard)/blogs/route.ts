@@ -18,6 +18,11 @@ export const GET = async (request: Request) => {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
+    // Feature: Pagination
+    const page: number = parseInt(searchParams.get('page') || '1');
+    const limit: number = parseInt(searchParams.get('limit') || '10');
+
+    // User and Category validation
     if (!userId || !Types.ObjectId.isValid(userId)) {
       return new NextResponse(
         JSON.stringify({ message: 'Invalid or missing userId' }),
@@ -99,7 +104,15 @@ export const GET = async (request: Request) => {
       };
     }
 
-    const userBlogs = await Blog.find(blogsFilter);
+    // Pagination Implementation
+    const skip: number = (page - 1) * limit;
+
+    const userBlogs = await Blog.find(blogsFilter)
+      .sort({
+        createdAt: 'asc', //sort blogs with dates in ascending order
+      })
+      .skip(skip)
+      .limit(limit);
 
     return new NextResponse(JSON.stringify({ userBlogs }), { status: 200 });
   } catch (err: any) {
